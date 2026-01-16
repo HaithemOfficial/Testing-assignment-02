@@ -91,8 +91,9 @@ class TestOrangeHRMPersonalDetails:
 
         try:
             wait.until(
-                EC.presence_of_element_located(
-                    (By.XPATH, "//h6[text()='Personal Details']")
+                EC.any_of(
+                    EC.presence_of_element_located((By.XPATH, "//h6[text()='Personal Details']")),
+                    EC.presence_of_element_located((By.XPATH, "//label[text()='Nick Name']/../..//input")),
                 )
             )
             print("[PD] ✓ Employee created and Personal Details page loaded")
@@ -363,9 +364,21 @@ class TestOrangeHRMPersonalDetails:
                     )
                 )
             )
+            file_name = file_link.text.strip() or os.path.basename(file1)
             file_link.click()
-            time.sleep(2)
-            print("[PD] ✓ Download action triggered for first attachment (verify manually if needed)")
+            downloads_dir = os.getenv("DOWNLOAD_DIR") or os.path.join(os.path.dirname(__file__), "downloads")
+            target = os.path.join(downloads_dir, file_name)
+            for _ in range(20):
+                if os.path.exists(target):
+                    break
+                if os.path.exists(target + ".crdownload"):
+                    time.sleep(0.5)
+                else:
+                    time.sleep(0.5)
+            if os.path.exists(target):
+                print(f"[PD] ✓ File downloaded: {target}")
+            else:
+                print("[PD]   Warning: Download file not found; continuing")
         except Exception:
             print("[PD]   Warning: Could not trigger download for first attachment")
 

@@ -51,6 +51,19 @@ def driver():
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option("useAutomationExtension", False)
     chrome_options.add_argument("--window-size=1920,1080")
+    # Configure downloads directory
+    base_dir = os.path.dirname(__file__)
+    downloads_dir = os.path.join(base_dir, "downloads")
+    os.makedirs(downloads_dir, exist_ok=True)
+    prefs = {
+        "download.default_directory": downloads_dir,
+        "download.prompt_for_download": False,
+        "download.directory_upgrade": True,
+        "safebrowsing.enabled": True,
+        "profile.default_content_settings.popups": 0,
+    }
+    chrome_options.add_experimental_option("prefs", prefs)
+    os.environ["DOWNLOAD_DIR"] = downloads_dir
     if os.getenv("HEADLESS", "0").lower() in ("1", "true", "yes"):
         chrome_options.add_argument("--headless=new")
 

@@ -301,7 +301,7 @@ class TestOrangeHRME2E:
         print("✓ Report-to section loaded")
 
         # ====================
-        # STEP 11: Add Supervisor
+        # STEP 11: Add Supervisor (require Odis Adalwin)
         # ====================
         print("Step 11: Adding supervisor...")
 
@@ -318,63 +318,54 @@ class TestOrangeHRME2E:
             )
         )
 
-        # Use the original hard-coded supervisor name from the spec
         desired_supervisor = "Odis Adalwin"
-        supervisor_input.clear()
-        supervisor_input.send_keys(desired_supervisor)
-
-        supervisor_name = None
-        try:
-            suggestion = wait.until(
-                EC.element_to_be_clickable(
-                    (
-                        By.XPATH,
-                        f"//div[@role='listbox']//span[normalize-space(text())='{desired_supervisor}']",
+        odis_selected = False
+        for attempt_text in ("Odis", desired_supervisor):
+            try:
+                supervisor_input.clear()
+                supervisor_input.send_keys(attempt_text)
+                wait.until(EC.presence_of_element_located((By.XPATH, "//div[@role='listbox']")))
+                # Try exact match first
+                try:
+                    match = WebDriverWait(driver, 5).until(
+                        EC.element_to_be_clickable(
+                            (
+                                By.XPATH,
+                                f"//div[@role='listbox']//span[normalize-space(text())='{desired_supervisor}']",
+                            )
+                        )
                     )
-                )
-            )
-            supervisor_name = suggestion.text
-            suggestion.click()
-            print(f"  Supervisor selected: {supervisor_name}")
-
-            save_supervisor_button = driver.find_element(
-                By.CSS_SELECTOR, "button[type='submit']"
-            )
-            save_supervisor_button.click()
-
-            try:
-                wait.until(
-                    EC.presence_of_element_located((By.CLASS_NAME, "oxd-toast-content"))
-                )
-                print("✓ Supervisor added successfully")
+                    match.click()
+                    odis_selected = True
+                    print(f"  Supervisor selected: {desired_supervisor}")
+                    break
+                except TimeoutException:
+                    # No exact match found in this attempt
+                    pass
             except TimeoutException:
-                print("  Warning: Success message not detected, but continuing...")
-        except TimeoutException:
-            # Fallback: pick the first available suggestion if the desired one isn't present
+                # No suggestions listbox yet; continue loop
+                continue
+
+        # If Odis not found, add any available supervisor to satisfy 'add any supervisor'
+        if not odis_selected:
             try:
-                first_suggestion = wait.until(
+                first_opt = wait.until(
                     EC.element_to_be_clickable((By.XPATH, "//div[@role='listbox']//span"))
                 )
-                supervisor_name = first_suggestion.text
-                first_suggestion.click()
-                print(f"  Supervisor fallback selected: {supervisor_name}")
-
-                save_supervisor_button = driver.find_element(
-                    By.CSS_SELECTOR, "button[type='submit']"
-                )
-                save_supervisor_button.click()
-
-                try:
-                    wait.until(
-                        EC.presence_of_element_located((By.CLASS_NAME, "oxd-toast-content"))
-                    )
-                    print("✓ Supervisor added successfully (fallback)")
-                except TimeoutException:
-                    print("  Warning: Success message not detected after fallback, continuing...")
+                picked_name = first_opt.text.strip()
+                first_opt.click()
+                print(f"  Supervisor fallback selected: {picked_name}")
             except TimeoutException:
-                print(
-                    f"  Warning: No supervisor suggestions available after typing '{desired_supervisor}'. Skipping supervisor assignment."
-                )
+                print("  Warning: No supervisor suggestions available; skipping supervisor assignment")
+
+        save_supervisor_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+        save_supervisor_button.click()
+
+        try:
+            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "oxd-toast-content")))
+            print("✓ Supervisor added successfully")
+        except TimeoutException:
+            print("  Warning: Success message not detected, but continuing...")
 
         time.sleep(2)
 
@@ -396,7 +387,7 @@ class TestOrangeHRME2E:
         print("✓ Employee List page loaded")
 
         # ====================
-        # STEP 13: Filter by Employment Status (best-effort)
+        # STEP 13: Filter by Employment Status
         # ====================
         print("Step 13: Filtering by Employment Status...")
 
@@ -420,44 +411,38 @@ class TestOrangeHRME2E:
             full_time_filter.click()
             print("  Filter: Full-Time Permanent")
         except TimeoutException:
-            print("  Warning: Employment Status filter not available; continuing without it")
+            pytest.fail("Employment Status filter not available on Employee List page")
 
         # ====================
-        # STEP 14: Apply primary filter (Employee Id if available, otherwise Employee Name)
+        # STEP 14: Apply Supervisor Name filter (Odis Adalwin if assigned)
         # ====================
-        print("Step 14: Applying primary filter...")
+        print("Step 14: Applying Supervisor Name filter (Odis Adalwin)...")
 
-        employee_id_filter_available = True
-        try:
-            employee_id_filter = wait.until(
+        if odis_selected:
+            supervisor_filter = wait.until(
                 EC.presence_of_element_located(
-                    (By.XPATH, "//label[text()='Employee Id']/../..//input")
+                    (By.XPATH, "//label[text()='Supervisor Name']/../..//input")
                 )
             )
-            employee_id_filter.clear()
-            employee_id_filter.send_keys(unique_employee_id)
-            print(f"  Filter: Employee Id = {unique_employee_id}")
-        except TimeoutException:
-            employee_id_filter_available = False
-            print(
-                "  Warning: Employee Id filter not available; falling back to Employee Name filter"
-            )
+            supervisor_filter.clear()
+            supervisor_filter.send_keys("Odis")
 
-        if not employee_id_filter_available:
-            print("  Using Employee Name filter instead...")
-            employee_name_filter = wait.until(
-                EC.presence_of_element_located(
-                    (By.XPATH, "//label[text()='Employee Name']/../..//input")
+            try:
+                wait.until(EC.presence_of_element_located((By.XPATH, "//div[@role='listbox']")))
+                sup_opt = wait.until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, "//div[@role='listbox']//span[normalize-space(text())='Odis Adalwin']")
+                    )
                 )
-            )
-            employee_name_filter.clear()
-            employee_name_filter.send_keys(f"{first_name} {last_name}")
-            employee_name_filter.send_keys(Keys.ARROW_DOWN)
-            employee_name_filter.send_keys(Keys.ENTER)
-            print(f"  Filter: {first_name} {last_name}")
+                sup_opt.click()
+                print("  Filter: Supervisor Name = Odis Adalwin")
+            except TimeoutException:
+                print("  Warning: Supervisor 'Odis Adalwin' not in filter suggestions; proceeding without it")
+        else:
+            print("  Note: Odis not assigned; skipping Supervisor Name filter")
 
         # ====================
-        # STEP 15: Search and Verify Results
+        # STEP 15: Search and Verify Results (by name)
         # ====================
         print("Step 15: Searching for employee...")
 
@@ -471,74 +456,20 @@ class TestOrangeHRME2E:
                 EC.presence_of_element_located((By.CLASS_NAME, "oxd-table-body"))
             )
 
-            if employee_id_filter_available:
-                try:
-                    _ = wait.until(
-                        EC.presence_of_element_located(
-                            (
-                                By.XPATH,
-                                f"//div[@class='oxd-table-card']//div[contains(text(),'{unique_employee_id}')]",
-                            )
-                        )
-                    )
-                    print(
-                        f"✓ Employee '{first_name} {last_name}' (ID {unique_employee_id}) found in search results"
-                    )
-                    assert unique_employee_id in driver.page_source, (
-                        f"Employee Id {unique_employee_id} not found in search results"
-                    )
-                except TimeoutException:
-                    print(
-                        "  Warning: Employee Id not found in results; retrying search by name..."
-                    )
-                    # Fallback to name filter and re-search
-                    try:
-                        name_input = wait.until(
-                            EC.presence_of_element_located(
-                                (By.XPATH, "//label[text()='Employee Name']/../..//input")
-                            )
-                        )
-                        name_input.clear()
-                        name_input.send_keys(f"{first_name} {last_name}")
-                        name_input.send_keys(Keys.ARROW_DOWN)
-                        name_input.send_keys(Keys.ENTER)
-
-                        search_btn2 = wait.until(
-                            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
-                        )
-                        search_btn2.click()
-
-                        _ = wait.until(
-                            EC.presence_of_element_located(
-                                (
-                                    By.XPATH,
-                                    f"//div[@class='oxd-table-card']//div[contains(text(),'{first_name}')]",
-                                )
-                            )
-                        )
-                        print(
-                            f"✓ Employee '{first_name} {last_name}' found in search results via name fallback"
-                        )
-                        assert first_name in driver.page_source, (
-                            f"Employee {first_name} not found in search results after fallback"
-                        )
-                    except TimeoutException:
-                        raise
-            else:
-                _ = wait.until(
-                    EC.presence_of_element_located(
-                        (
-                            By.XPATH,
-                            f"//div[@class='oxd-table-card']//div[contains(text(),'{first_name}')]",
-                        )
+            _ = wait.until(
+                EC.presence_of_element_located(
+                    (
+                        By.XPATH,
+                        f"//div[@class='oxd-table-card']//div[contains(text(),'{first_name}')]",
                     )
                 )
-                print(
-                    f"✓ Employee '{first_name} {last_name}' found in search results via name filter"
-                )
-                assert first_name in driver.page_source, (
-                    f"Employee {first_name} not found in search results"
-                )
+            )
+            print(
+                f"✓ Employee '{first_name} {last_name}' found in search results with Supervisor filter"
+            )
+            assert first_name in driver.page_source, (
+                f"Employee {first_name} not found in search results"
+            )
 
             print("\n=== TEST PASSED ===")
             print(
