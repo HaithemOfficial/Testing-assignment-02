@@ -49,5 +49,3 @@ To run tests in headless mode (no browser windows), set the `HEADLESS` environme
 $env:HEADLESS = '1'
 python tests/run_all_tests.py
 ```
-
-If you need a CI workflow or a different README format, tell me what you prefer.
