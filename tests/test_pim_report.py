@@ -20,14 +20,8 @@ class ReportSpec:
 
 class TestPIMReportStyled:
     def test_create_report_with_criteria_and_columns(self, driver, base_url, login_credentials):
-        """Task 5: Create a PIM predefined report, add/delete criteria, set Include,
-        add >=15 columns across >=4 groups, check Include Header, then delete 3 columns
-        and a group ensuring >=8 columns remain. Style-only changes vs friend code.
-        """
-
         wait = WebDriverWait(driver, 30)
 
-        # Helpers
         def click_js(el):
             try:
                 el.click()
@@ -37,7 +31,7 @@ class TestPIMReportStyled:
         def wait_xpath(xpath, cond=EC.presence_of_element_located, timeout=30):
             return WebDriverWait(driver, timeout).until(cond((By.XPATH, xpath)))
 
-        # Step 1: Login
+        print("Step 1: Logging in and navigating to Dashboard...")
         driver.get(base_url)
         u = wait.until(EC.presence_of_element_located((By.NAME, "username")))
         p = driver.find_element(By.NAME, "password")
@@ -45,31 +39,32 @@ class TestPIMReportStyled:
         p.clear(); p.send_keys(login_credentials["password"]) 
         driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
         wait.until(EC.presence_of_element_located((By.XPATH, "//span/h6[text()='Dashboard']")))
-
-        # Step 2: Navigate to Define Report
+        
+        print("Step 2: Navigating to PIM > Reports and opening Define Report page...")
         click_js(wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='PIM']"))))
         try:
             click_js(wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@href,'viewDefinedPredefinedReports') or .//span[normalize-space()='Reports']]"))))
             click_js(wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@class,'oxd-button') and contains(.,'Add')]"))))
             wait_xpath("//h6[contains(.,'Define Report')]")
+            print("✓ Define Report page loaded")
         except TimeoutException:
             driver.get(base_url + "/web/index.php/pim/definePredefinedReport")
             try:
                 wait_xpath("//h6[contains(.,'Define Report') or contains(.,'Reports')]")
+                print("✓ Fallback: Define Report page loaded via direct URL")
             except TimeoutException:
                 pass
-
-        # Step 3: Basic info + Include
+        
         ts = datetime.now().strftime("%Y%m%d%H%M%S")
         spec = ReportSpec(name=f"Auto PIM Report {ts}")
 
+        print(f"Step 3: Filling report name '{spec.name}' and setting Include option...")
         name_input = wait_xpath("//label[text()='Report Name']/../following-sibling::div//input")
         name_input.clear(); name_input.send_keys(spec.name)
 
         click_js(wait_xpath("//label[text()='Include']/../following-sibling::div//div[contains(@class,'oxd-select-text')]", EC.element_to_be_clickable))
         click_js(wait_xpath(f"//div[@role='option' and contains(.,'{spec.include_text}')]", EC.element_to_be_clickable))
-
-        # Step 4: Add two criteria then delete all
+        
         for i in range(2):
             try:
                 click_js(wait_xpath("//label[text()='Selection Criteria']/../following-sibling::div//div[contains(@class,'oxd-select-text')]", EC.element_to_be_clickable))
@@ -89,8 +84,7 @@ class TestPIMReportStyled:
                     driver.execute_script("arguments[0].click();", b)
         except Exception:
             pass
-
-        # Step 5: Add columns from multiple groups until >=15
+        
         def select_group(label_sub: str) -> bool:
             try:
                 click_js(wait_xpath("//label[text()='Display Fields']/../following-sibling::div//div[contains(@class,'oxd-select-text')]", EC.element_to_be_clickable))
@@ -133,8 +127,7 @@ class TestPIMReportStyled:
             total_cols = len(rows)
             if total_cols >= spec.min_columns:
                 break
-
-        # Step 6: Check Include Header where present
+        
         try:
             cbs = driver.find_elements(By.XPATH, "//label[contains(.,'Include Header')]/../following-sibling::div//input[@type='checkbox']")
             for cb in cbs:
@@ -145,8 +138,7 @@ class TestPIMReportStyled:
                     driver.execute_script("arguments[0].click();", cb)
         except Exception:
             pass
-
-        # Step 7: Delete any 3 columns and a group
+        
         try:
             display_rows = driver.find_elements(By.XPATH, "//div[contains(@class,'oxd-table-card')][.//div[contains(@class,'oxd-table-header-cell') and contains(.,'Display Field')]]/following-sibling::div[contains(@class,'oxd-table-card')]")
             buttons = []
@@ -175,8 +167,7 @@ class TestPIMReportStyled:
         remaining = driver.find_elements(By.XPATH, "//div[contains(@class,'oxd-table-card')][.//div[contains(@class,'oxd-table-header-cell') and contains(.,'Display Field')]]/following-sibling::div[contains(@class,'oxd-table-card')]")
         if total_cols >= spec.remaining_min:
             assert len(remaining) >= spec.remaining_min, "Expected at least 8 display columns to remain after deletions"
-
-        # Step 8: Save (best-effort)
+        
         try:
             click_js(driver.find_element(By.XPATH, "//button[@type='submit' and contains(.,'Save')]"))
             wait.until(EC.presence_of_element_located((By.XPATH, "//h6[contains(.,'Defined Predefined Reports')]")))

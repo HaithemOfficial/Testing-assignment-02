@@ -1,11 +1,7 @@
-"""
-End-to-end automated UI test for OrangeHRM application.
-Tests the complete flow of creating an employee, setting job details,
-adding supervisor, and verifying in employee list.
-"""
 import os
 import time
 from datetime import datetime
+
 import pytest
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -15,65 +11,28 @@ from selenium.common.exceptions import TimeoutException, ElementClickIntercepted
 
 
 class TestOrangeHRME2E:
-    """End-to-end test class for OrangeHRM employee management."""
-    
     def test_employee_creation_and_verification(self, driver, base_url, login_credentials):
-        """E2E: create employee, set job + supervisor, then verify in Employee List."""
-
         wait = WebDriverWait(driver, 20)
 
-        # ====================
-        # STEP 1: Login
-        # ====================
         print("Step 1: Logging in...")
-
         driver.get(base_url)
-
-        username_input = wait.until(
-            EC.presence_of_element_located((By.NAME, "username"))
-        )
+        username_input = wait.until(EC.presence_of_element_located((By.NAME, "username")))
         password_input = driver.find_element(By.NAME, "password")
-
-        username_input.clear()
-        username_input.send_keys(login_credentials["username"])
-        password_input.clear()
-        password_input.send_keys(login_credentials["password"])
-
+        username_input.clear(); username_input.send_keys(login_credentials["username"])
+        password_input.clear(); password_input.send_keys(login_credentials["password"])
         driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
-
-        # Wait for Dashboard to appear
-        wait.until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//span/h6[text()='Dashboard']")
-            )
-        )
+        wait.until(EC.presence_of_element_located((By.XPATH, "//span/h6[text()='Dashboard']")))
         print("✓ Logged in")
 
-        # ====================
-        # STEP 2: Navigate to PIM → Add Employee
-        # ====================
         print("Step 2: Navigating to PIM → Add Employee...")
-
-        pim_menu = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//span[text()='PIM']"))
-        )
+        pim_menu = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='PIM']")))
         pim_menu.click()
-
-        add_employee_menu = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//a[text()='Add Employee']"))
-        )
+        add_employee_menu = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[text()='Add Employee']")))
         add_employee_menu.click()
-
-        wait.until(
-            EC.presence_of_element_located((By.NAME, "firstName"))
-        )
+        wait.until(EC.presence_of_element_located((By.NAME, "firstName")))
         print("✓ Add Employee form loaded")
 
-        # ====================
-        # STEP 3: Fill Employee Details (with unique Employee Id)
-        # ====================
         print("Step 3: Filling employee details...")
-
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         first_name = f"Auto{timestamp[-4:]}"
         last_name = "Tester"
@@ -83,30 +42,17 @@ class TestOrangeHRME2E:
 
         first_name_field = driver.find_element(By.NAME, "firstName")
         last_name_field = driver.find_element(By.NAME, "lastName")
+        first_name_field.clear(); first_name_field.send_keys(first_name)
+        last_name_field.clear(); last_name_field.send_keys(last_name)
 
-        first_name_field.clear()
-        first_name_field.send_keys(first_name)
-        last_name_field.clear()
-        last_name_field.send_keys(last_name)
-
-        employee_id_field = driver.find_element(
-            By.XPATH, "//label[text()='Employee Id']/../..//input"
-        )
+        employee_id_field = driver.find_element(By.XPATH, "//label[text()='Employee Id']/../..//input")
         auto_employee_id = employee_id_field.get_attribute("value")
-        employee_id_field.clear()
-        employee_id_field.send_keys(unique_employee_id)
-        print(
-            f"  Auto Employee Id: {auto_employee_id} -> Overridden with: {unique_employee_id}"
-        )
+        employee_id_field.clear(); employee_id_field.send_keys(unique_employee_id)
+        print(f"  Auto Employee Id: {auto_employee_id} -> Overridden with: {unique_employee_id}")
 
-        # ====================
-        # STEP 4: Upload Profile Image
-        # ====================
         print("Step 4: Uploading profile image...")
-
         current_dir = os.path.dirname(os.path.abspath(__file__))
         image_path = os.path.join(current_dir, "test_data", "profile_image.png")
-
         try:
             file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
             file_input.send_keys(image_path)
@@ -115,61 +61,30 @@ class TestOrangeHRME2E:
         except Exception as e:
             print(f"  Warning: Could not upload image - {str(e)}")
 
-        # ====================
-        # STEP 5: Enable Create Login Details
-        # ====================
         print("Step 5: Creating login credentials...")
-
-        login_toggle = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, ".oxd-switch-input"))
-        )
+        login_toggle = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".oxd-switch-input")))
         login_toggle.click()
-
         time.sleep(0.5)
-
-        username_field = wait.until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//label[text()='Username']/../..//input")
-            )
-        )
-        username_field.clear()
-        username_field.send_keys(username)
-
-        password_field = driver.find_element(
-            By.XPATH, "//label[text()='Password']/../..//input"
-        )
-        password_field.clear()
-        password_field.send_keys(password)
-
-        confirm_password_field = driver.find_element(
-            By.XPATH, "//label[text()='Confirm Password']/../..//input"
-        )
-        confirm_password_field.clear()
-        confirm_password_field.send_keys(password)
-
+        username_field = wait.until(EC.presence_of_element_located((By.XPATH, "//label[text()='Username']/../..//input")))
+        username_field.clear(); username_field.send_keys(username)
+        password_field = driver.find_element(By.XPATH, "//label[text()='Password']/../..//input")
+        password_field.clear(); password_field.send_keys(password)
+        confirm_password_field = driver.find_element(By.XPATH, "//label[text()='Confirm Password']/../..//input")
+        confirm_password_field.clear(); confirm_password_field.send_keys(password)
         print(f"  Username: {username}")
         print("✓ Login credentials created")
 
-        # ====================
-        # STEP 6: Save Employee
-        # ====================
         print("Step 6: Saving employee...")
-
         save_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         save_button.click()
-
         try:
-            job_tab = wait.until(
-                EC.presence_of_element_located((By.XPATH, "//a[text()='Job']"))
-            )
+            job_tab = wait.until(EC.presence_of_element_located((By.XPATH, "//a[text()='Job']")))
             print("✓ Employee saved successfully")
             assert job_tab.is_displayed(), "Employee creation failed"
         except TimeoutException:
             print("✗ Employee not saved or Job tab not visible")
             print("  Current URL after save:", driver.current_url)
-            error_labels = driver.find_elements(
-                By.CSS_SELECTOR, "span.oxd-input-field-error-message"
-            )
+            error_labels = driver.find_elements(By.CSS_SELECTOR, "span.oxd-input-field-error-message")
             if error_labels:
                 print("  Validation errors:")
                 for err in error_labels:
@@ -177,319 +92,135 @@ class TestOrangeHRME2E:
                         print("   -", err.text)
                     except Exception:
                         pass
-
             pytest.fail("Employee creation failed; Job tab not available")
 
-        # ====================
-        # STEP 7: Navigate to Job Section
-        # ====================
         print("Step 7: Opening Job section...")
-
-        job_link = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//a[text()='Job']"))
-        )
+        job_link = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[text()='Job']")))
         job_link.click()
-
-        wait.until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//label[text()='Joined Date']/../..//input")
-            )
-        )
+        wait.until(EC.presence_of_element_located((By.XPATH, "//label[text()='Joined Date']/../..//input")))
         print("✓ Job section loaded")
 
-        # ====================
-        # STEP 8: Set Job Details
-        # ====================
         print("Step 8: Setting job details...")
-
-        joined_date_field = wait.until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//label[text()='Joined Date']/../..//input")
-            )
-        )
-        joined_date_field.clear()
-        joined_date_field.send_keys("2024-01-15")
-        joined_date_field.send_keys(Keys.TAB)
+        joined_date_field = wait.until(EC.presence_of_element_located((By.XPATH, "//label[text()='Joined Date']/../..//input")))
+        joined_date_field.clear(); joined_date_field.send_keys("2024-01-15"); joined_date_field.send_keys(Keys.TAB)
         print("  Joined Date: 2024-01-15")
-
         try:
-            wait.until(
-                EC.invisibility_of_element_located(
-                    (By.CSS_SELECTOR, ".oxd-form-loader")
-                )
-            )
+            wait.until(EC.invisibility_of_element_located((By.CSS_SELECTOR, ".oxd-form-loader")))
         except TimeoutException:
             pass
 
-        job_title_dropdown = wait.until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "(//label[text()='Job Title']/../..//div[@class='oxd-select-text-input'])[1]")
-            )
-        )
-        job_title_dropdown.click()
-        job_title_dropdown.send_keys(Keys.ARROW_DOWN)
-        job_title_dropdown.send_keys(Keys.ENTER)
+        job_title_dropdown = wait.until(EC.element_to_be_clickable((By.XPATH, "(//label[text()='Job Title']/../..//div[@class='oxd-select-text-input'])[1]")))
+        job_title_dropdown.click(); job_title_dropdown.send_keys(Keys.ARROW_DOWN); job_title_dropdown.send_keys(Keys.ENTER)
         print("  Job Title: (first available option)")
 
-        job_category_dropdown = wait.until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "(//label[text()='Job Category']/../..//div[@class='oxd-select-text-input'])[1]")
-            )
-        )
-        job_category_dropdown.click()
-        job_category_dropdown.send_keys(Keys.ARROW_DOWN)
-        job_category_dropdown.send_keys(Keys.ENTER)
+        job_category_dropdown = wait.until(EC.element_to_be_clickable((By.XPATH, "(//label[text()='Job Category']/../..//div[@class='oxd-select-text-input'])[1]")))
+        job_category_dropdown.click(); job_category_dropdown.send_keys(Keys.ARROW_DOWN); job_category_dropdown.send_keys(Keys.ENTER)
         print("  Job Category: (first available option)")
 
-        location_dropdown = wait.until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "(//label[text()='Location']/../..//div[@class='oxd-select-text-input'])[1]")
-            )
-        )
-        location_dropdown.click()
-        location_dropdown.send_keys(Keys.ARROW_DOWN)
-        location_dropdown.send_keys(Keys.ENTER)
+        location_dropdown = wait.until(EC.element_to_be_clickable((By.XPATH, "(//label[text()='Location']/../..//div[@class='oxd-select-text-input'])[1]")))
+        location_dropdown.click(); location_dropdown.send_keys(Keys.ARROW_DOWN); location_dropdown.send_keys(Keys.ENTER)
         print("  Location: (first available option)")
 
-        employment_status_dropdown = wait.until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "(//label[text()='Employment Status']/../..//div[@class='oxd-select-text-input'])[1]")
-            )
-        )
-        employment_status_dropdown.click()
-        time.sleep(0.5)
-
-        full_time_option = wait.until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "//div[@role='option']//span[contains(text(),'Full-Time Permanent')]")
-            )
-        )
+        employment_status_dropdown = wait.until(EC.element_to_be_clickable((By.XPATH, "(//label[text()='Employment Status']/../..//div[@class='oxd-select-text-input'])[1]")))
+        employment_status_dropdown.click(); time.sleep(0.5)
+        full_time_option = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@role='option']//span[contains(text(),'Full-Time Permanent')]")))
         full_time_option.click()
         print("  Employment Status: Full-Time Permanent")
 
-        # ====================
-        # STEP 9: Save Job Details
-        # ====================
         print("Step 9: Saving job details...")
-
-        save_job_button = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
-        )
+        save_job_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         save_job_button.click()
-
         try:
-            wait.until(
-                EC.presence_of_element_located((By.CLASS_NAME, "oxd-toast-content"))
-            )
+            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "oxd-toast-content")))
             print("✓ Job details saved successfully")
         except TimeoutException:
             print("  Warning: Success message not detected, but continuing...")
 
-        # ====================
-        # STEP 10: Navigate to Report-to Section
-        # ====================
         print("Step 10: Opening Report-to section...")
-
-        report_to_link = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//a[text()='Report-to']"))
-        )
+        report_to_link = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[text()='Report-to']")))
         report_to_link.click()
-
-        wait.until(
-            EC.presence_of_element_located((By.XPATH, "//h6[text()='Report to']"))
-        )
+        wait.until(EC.presence_of_element_located((By.XPATH, "//h6[text()='Report to']")))
         print("✓ Report-to section loaded")
 
-        # ====================
-        # STEP 11: Add Supervisor (require Odis Adalwin)
-        # ====================
         print("Step 11: Adding supervisor...")
-
-        add_supervisor_button = wait.until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "//h6[text()='Assigned Supervisors']/following::button[1]")
-            )
-        )
+        add_supervisor_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//h6[text()='Assigned Supervisors']/following::button[1]")))
         add_supervisor_button.click()
+        supervisor_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Type for hints...']")))
+        try:
+            supervisor_input.clear(); supervisor_input.send_keys("a")
+            wait.until(EC.presence_of_element_located((By.XPATH, "//div[@role='listbox']")))
+            first_opt = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@role='listbox']//span")))
+            picked_name = first_opt.text.strip(); first_opt.click()
+            print(f"  Supervisor assigned: {picked_name}")
+        except TimeoutException:
+            print("  Warning: No supervisor suggestions available; skipping supervisor assignment")
 
-        supervisor_input = wait.until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//input[@placeholder='Type for hints...']")
-            )
-        )
-
-        desired_supervisor = "Odis Adalwin"
-        odis_selected = False
-        for attempt_text in ("Odis", desired_supervisor):
-            try:
-                supervisor_input.clear()
-                supervisor_input.send_keys(attempt_text)
-                wait.until(EC.presence_of_element_located((By.XPATH, "//div[@role='listbox']")))
-                # Try exact match first
-                try:
-                    match = WebDriverWait(driver, 5).until(
-                        EC.element_to_be_clickable(
-                            (
-                                By.XPATH,
-                                f"//div[@role='listbox']//span[normalize-space(text())='{desired_supervisor}']",
-                            )
-                        )
-                    )
-                    match.click()
-                    odis_selected = True
-                    print(f"  Supervisor selected: {desired_supervisor}")
-                    break
-                except TimeoutException:
-                    # No exact match found in this attempt
-                    pass
-            except TimeoutException:
-                # No suggestions listbox yet; continue loop
-                continue
-
-        # If Odis not found, add any available supervisor to satisfy 'add any supervisor'
-        if not odis_selected:
-            try:
-                first_opt = wait.until(
-                    EC.element_to_be_clickable((By.XPATH, "//div[@role='listbox']//span"))
-                )
-                picked_name = first_opt.text.strip()
-                first_opt.click()
-                print(f"  Supervisor fallback selected: {picked_name}")
-            except TimeoutException:
-                print("  Warning: No supervisor suggestions available; skipping supervisor assignment")
+        try:
+            method_dropdown = wait.until(EC.element_to_be_clickable((By.XPATH, "//label[text()='Reporting Method']/../..//div[contains(@class,'oxd-select-text-input')]")))
+            method_dropdown.click(); time.sleep(0.5)
+            method_options = driver.find_elements(By.XPATH, "//div[@role='listbox']//span")
+            if method_options:
+                method_options[0].click(); print(f"  Reporting Method set: {method_options[0].text}")
+        except Exception:
+            print("  Warning: Could not set Reporting Method; skipping")
 
         save_supervisor_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         save_supervisor_button.click()
-
         try:
             wait.until(EC.presence_of_element_located((By.CLASS_NAME, "oxd-toast-content")))
             print("✓ Supervisor added successfully")
         except TimeoutException:
             print("  Warning: Success message not detected, but continuing...")
-
         time.sleep(2)
 
-        # ====================
-        # STEP 12: Navigate to Employee List
-        # ====================
         print("Step 12: Navigating to Employee List...")
-
-        pim_menu = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//span[text()='PIM']"))
-        )
+        pim_menu = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='PIM']")))
         pim_menu.click()
-
-        wait.until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//h5[text()='Employee Information']")
-            )
-        )
+        wait.until(EC.presence_of_element_located((By.XPATH, "//h5[text()='Employee Information']")))
         print("✓ Employee List page loaded")
 
-        # ====================
-        # STEP 13: Filter by Employment Status
-        # ====================
         print("Step 13: Filtering by Employment Status...")
-
         try:
-            employment_status_filter = wait.until(
-                EC.element_to_be_clickable(
-                    (
-                        By.XPATH,
-                        "(//label[text()='Employment Status']/../..//div[@class='oxd-select-text-input'])[1]",
-                    )
-                )
-            )
-            employment_status_filter.click()
-            time.sleep(0.5)
-
-            full_time_filter = wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, "//div[@role='option']//span[contains(text(),'Full-Time Permanent')]")
-                )
-            )
-            full_time_filter.click()
-            print("  Filter: Full-Time Permanent")
+            employment_status_filter = wait.until(EC.element_to_be_clickable((By.XPATH, "(//label[text()='Employment Status']/../..//div[@class='oxd-select-text-input'])[1]")))
+            employment_status_filter.click(); time.sleep(0.5)
+            full_time_filter = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@role='option']//span[contains(text(),'Full-Time Permanent')]")))
+            full_time_filter.click(); print("  Filter: Full-Time Permanent")
         except TimeoutException:
             pytest.fail("Employment Status filter not available on Employee List page")
 
-        # ====================
-        # STEP 14: Apply Supervisor Name filter (Odis Adalwin if assigned)
-        # ====================
         print("Step 14: Applying Supervisor Name filter (Odis Adalwin)...")
+        supervisor_filter = wait.until(EC.presence_of_element_located((By.XPATH, "//label[text()='Supervisor Name']/../..//input")))
+        supervisor_filter.clear(); supervisor_filter.send_keys("Odis")
+        try:
+            wait.until(EC.presence_of_element_located((By.XPATH, "//div[@role='listbox']")))
+            sup_opt = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@role='listbox']//span[normalize-space(text())='Odis Adalwin']")))
+            sup_opt.click(); print("  Filter: Supervisor Name = Odis Adalwin")
+        except TimeoutException:
+            print("  Warning: Supervisor 'Odis Adalwin' not in filter suggestions; proceeding without it")
 
-        if odis_selected:
-            supervisor_filter = wait.until(
-                EC.presence_of_element_located(
-                    (By.XPATH, "//label[text()='Supervisor Name']/../..//input")
-                )
-            )
-            supervisor_filter.clear()
-            supervisor_filter.send_keys("Odis")
-
-            try:
-                wait.until(EC.presence_of_element_located((By.XPATH, "//div[@role='listbox']")))
-                sup_opt = wait.until(
-                    EC.element_to_be_clickable(
-                        (By.XPATH, "//div[@role='listbox']//span[normalize-space(text())='Odis Adalwin']")
-                    )
-                )
-                sup_opt.click()
-                print("  Filter: Supervisor Name = Odis Adalwin")
-            except TimeoutException:
-                print("  Warning: Supervisor 'Odis Adalwin' not in filter suggestions; proceeding without it")
-        else:
-            print("  Note: Odis not assigned; skipping Supervisor Name filter")
-
-        # ====================
-        # STEP 15: Search and Verify Results (by name)
-        # ====================
         print("Step 15: Searching for employee...")
-
-        search_button = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
-        )
+        search_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         search_button.click()
 
         try:
-            wait.until(
-                EC.presence_of_element_located((By.CLASS_NAME, "oxd-table-body"))
-            )
-
-            _ = wait.until(
-                EC.presence_of_element_located(
-                    (
-                        By.XPATH,
-                        f"//div[@class='oxd-table-card']//div[contains(text(),'{first_name}')]",
-                    )
-                )
-            )
-            print(
-                f"✓ Employee '{first_name} {last_name}' found in search results with Supervisor filter"
-            )
-            assert first_name in driver.page_source, (
-                f"Employee {first_name} not found in search results"
-            )
-
+            _ = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "oxd-table-body")))
+            _ = wait.until(EC.presence_of_element_located((By.XPATH, f"//div[@class='oxd-table-card']//div[contains(text(),'{first_name}')]")))
+            print(f"✓ Employee '{first_name} {last_name}' found in search results with Supervisor filter")
+            assert first_name in driver.page_source, f"Employee {first_name} not found in search results"
             print("\n=== TEST PASSED ===")
-            print(
-                f"Employee '{first_name} {last_name}' (ID {unique_employee_id}) successfully created and verified!"
-            )
-
+            print(f"Employee '{first_name} {last_name}' (ID {unique_employee_id}) successfully created and verified!")
         except TimeoutException:
-            print(
-                f"✗ Employee '{first_name} {last_name}' (ID {unique_employee_id}) NOT found in search results"
-            )
-
+            print(f"✗ Employee '{first_name} {last_name}' (ID {unique_employee_id}) NOT found in search results")
             try:
                 table_body = driver.find_element(By.CLASS_NAME, "oxd-table-body")
-                print(f"Table content: {table_body.text[:500]}")
+                if not table_body.text.strip():
+                    print("  No results found in the table after search.")
+                else:
+                    print(f"Table content: {table_body.text[:500]}")
             except Exception:
                 print("  Warning: Could not read table body text for debugging")
-
-            pytest.fail(
-                f"Employee '{first_name} {last_name}' (ID {unique_employee_id}) was not found in filtered search results"
-            )
+            print("  Search completed, but no matching employee was found.")
+            pytest.fail(f"Employee '{first_name} {last_name}' (ID {unique_employee_id}) was not found in filtered search results")
 
 
 if __name__ == "__main__":

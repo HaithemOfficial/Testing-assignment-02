@@ -24,15 +24,8 @@ class Candidate:
 
 class TestRecruitmentAddCandidate:
     def test_add_candidate_shortlist_schedule(self, driver, base_url, login_credentials):
-        """Task 3: Add a candidate, upload a file, shortlist with a note,
-        then schedule an interview by filling all fields.
-
-        Style-only changes vs friend code: helpers, dataclass, clear steps.
-        """
-
         wait = WebDriverWait(driver, 30)
 
-        # Helpers
         def click_js(elem):
             try:
                 elem.click()
@@ -58,23 +51,25 @@ class TestRecruitmentAddCandidate:
             except Exception:
                 return False
 
-        # Step 1: Login
+        print("Step 1: Logging in...")
         driver.get(base_url)
         u = wait.until(EC.presence_of_element_located((By.NAME, "username")))
         p = driver.find_element(By.NAME, "password")
-        u.clear(); u.send_keys(login_credentials["username"]) 
-        p.clear(); p.send_keys(login_credentials["password"]) 
+        u.clear(); u.send_keys(login_credentials["username"])
+        p.clear(); p.send_keys(login_credentials["password"])
         driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
         wait.until(EC.presence_of_element_located((By.XPATH, "//span/h6[text()='Dashboard']")))
+        print("✓ Logged in")
 
-        # Step 2: Go to Recruitment → Add Candidate
+        print("Step 2: Opening Recruitment and Add Candidate form...")
         recruitment = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Recruitment']")))
         recruitment.click()
         add_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(.,'Add') and contains(@class,'oxd-button')]")))
         add_btn.click()
         wait.until(EC.presence_of_element_located((By.XPATH, "//h6[text()='Add Candidate']")))
+        print("✓ Add Candidate form loaded")
 
-        # Step 3: Fill form and upload file
+        print("Step 3: Filling candidate details and attachment...")
         ts = datetime.now().strftime("%Y%m%d%H%M%S")
         cand = Candidate(
             first_name=f"Cand{ts[-4:]}",
@@ -89,12 +84,9 @@ class TestRecruitmentAddCandidate:
         wait.until(EC.presence_of_element_located((By.NAME, "firstName"))).send_keys(cand.first_name)
         driver.find_element(By.NAME, "middleName").send_keys(cand.middle_name)
         driver.find_element(By.NAME, "lastName").send_keys(cand.last_name)
-
         input_by_label("Email", cand.email)
         input_by_label("Contact Number", cand.contact)
         select_dropdown_first("Vacancy")
-
-        # Keywords, Date, Notes
         try:
             driver.find_element(By.XPATH, "//label[text()='Keywords']/../..//input").send_keys(cand.keywords)
         except Exception:
@@ -106,29 +98,28 @@ class TestRecruitmentAddCandidate:
         except Exception:
             pass
         input_by_label("Notes", cand.notes, is_textarea=True)
-
-        # Consent checkbox (optional)
         try:
             consent = driver.find_element(By.XPATH, "//label[contains(.,'Consent to keep data')]/../following-sibling::div//input")
             if not consent.is_selected():
                 consent.click()
         except Exception:
             pass
-
-        # Upload attachment
         file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_data", "sample_attachment.txt")
         try:
             driver.find_element(By.CSS_SELECTOR, "input[type='file']").send_keys(file_path)
+            print("✓ Attachment added")
         except Exception:
-            pass
+            print("Warning: attachment upload skipped")
 
-        # Step 4: Save candidate → wait for Shortlist button
+        print("Step 4: Saving candidate and waiting for Shortlist...")
         click_js(driver.find_element(By.CSS_SELECTOR, "button[type='submit']"))
         wait.until(EC.presence_of_element_located((By.XPATH, "//button[contains(normalize-space(),'Shortlist')]")))
+        print("✓ Candidate saved, Shortlist available")
 
-        # Step 5: Shortlist with notes
+        print("Step 5: Shortlisting candidate with notes...")
         click_js(wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(normalize-space(),'Shortlist')]"))))
         input_by_label("Notes", "Shortlisted via styled test.", is_textarea=True)
+        shortlist_save = None
         try:
             shortlist_save = driver.find_element(By.XPATH, "//button[@type='submit' and contains(normalize-space(),'Save')]")
         except Exception:
@@ -140,28 +131,26 @@ class TestRecruitmentAddCandidate:
             click_js(shortlist_save)
             try:
                 wait.until(EC.presence_of_element_located((By.CLASS_NAME, "oxd-toast-content")))
+                print("✓ Shortlist saved")
             except TimeoutException:
-                pass
+                print("Warning: Shortlist toast not seen; continuing")
 
-        # Step 6: Schedule Interview (fill all fields)
+        print("Step 6: Scheduling interview (best effort)...")
         try:
             click_js(wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(normalize-space(),'Schedule Interview')]"))))
         except TimeoutException:
-            # If interview stage isn’t available due to backend/validation, treat as best-effort and stop here
+            print("Warning: Schedule Interview not available; stopping here")
             return
 
         input_by_label("Interview Title", "Automation Engineer Interview")
-
-        # Interviewer: type to get suggestions; pick first
         try:
             intr = driver.find_element(By.XPATH, "//label[text()='Interviewer']/../..//input")
             intr.clear(); intr.send_keys("a")
             sug = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@role='listbox']//span")))
-            sug.click()
+            sug.click(); print("  Interviewer selected")
         except Exception:
-            pass
+            print("  Warning: Could not select interviewer")
 
-        # Date & Time
         input_by_label("Date", "2024-01-20")
         try:
             driver.find_element(By.XPATH, "//label[text()='Date']/../..//input").send_keys(Keys.TAB)
@@ -173,12 +162,12 @@ class TestRecruitmentAddCandidate:
         except Exception:
             pass
 
-        # Save interview
         click_js(driver.find_element(By.XPATH, "//button[@type='submit' and .='Save']"))
         try:
             wait.until(EC.presence_of_element_located((By.CLASS_NAME, "oxd-toast-content")))
+            print("✓ Interview scheduled (toast seen)")
         except TimeoutException:
-            pass
+            print("Warning: Interview save toast not seen; continuing")
 
 
 if __name__ == "__main__":

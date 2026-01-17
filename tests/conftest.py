@@ -67,28 +67,20 @@ def driver():
     if os.getenv("HEADLESS", "0").lower() in ("1", "true", "yes"):
         chrome_options.add_argument("--headless=new")
 
-    # Initialize Chrome WebDriver with webdriver-manager
-    driver_path = ChromeDriverManager().install()
-    if "THIRD_PARTY_NOTICES" in driver_path:
-        driver_path = os.path.join(os.path.dirname(driver_path), "chromedriver")
+    # Suppress ChromeDriver/system error logs for cleaner output
+    chrome_options.add_argument("--log-level=3")  # Suppress most Chrome logs
+    service = Service(ChromeDriverManager().install())
+    service.log_output = os.devnull  # Suppress driver logs to console
 
-    if os.path.exists(driver_path):
-        try:
-            os.chmod(driver_path, 0o755)
-        except PermissionError:
-            pass
-
-    service = Service(driver_path)
     try:
         driver = webdriver.Chrome(service=service, options=chrome_options)
     except Exception:
-        # Fallback to Selenium Manager-managed driver path
         driver = webdriver.Chrome(options=chrome_options)
     driver.implicitly_wait(10)
 
+    print("(Browser system messages suppressed)")
     yield driver
 
-    # Harden teardown to avoid occasional hang
     try:
         driver.quit()
     except Exception:
